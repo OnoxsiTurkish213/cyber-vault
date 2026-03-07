@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cyber-Vault | Zero-Knowledge Password Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+
+<!-- ═══════════════════════════════════════
+     AUTH SCREEN
+═══════════════════════════════════════ -->
+<div id="auth-screen" class="screen active">
+  <div class="auth-container" id="auth-box">
+
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 60 60" fill="none">
+          <path d="M30 5L8 15V30C8 42.5 17.5 54.1 30 57C42.5 54.1 52 42.5 52 30V15L30 5Z" stroke="#bc13fe" stroke-width="2" fill="none"/>
+          <path d="M30 5L8 15V30C8 42.5 17.5 54.1 30 57C42.5 54.1 52 42.5 52 30V15L30 5Z" fill="url(#sg)" opacity="0.15"/>
+          <rect x="22" y="26" width="16" height="12" rx="2" stroke="#00f3ff" stroke-width="1.5" fill="none"/>
+          <path d="M26 26V22C26 19.8 27.8 18 30 18C32.2 18 34 19.8 34 22V26" stroke="#00f3ff" stroke-width="1.5"/>
+          <circle cx="30" cy="32" r="2" fill="#bc13fe"/>
+          <defs><linearGradient id="sg" x1="8" y1="5" x2="52" y2="57">
+            <stop offset="0%" stop-color="#bc13fe"/><stop offset="100%" stop-color="#00f3ff"/>
+          </linearGradient></defs>
+        </svg>
+      </div>
+      <h1 class="logo-text">CYBER<span>VAULT</span></h1>
+      <p class="logo-sub">ZERO-KNOWLEDGE · AES-256 · TOTP-2FA</p>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="switchAuthTab('login')">GİRİŞ YAP</button>
+      <button class="tab-btn" onclick="switchAuthTab('register')">KAYIT OL</button>
+    </div>
+
+    <!-- ══ LOGIN — tek ekran, 4 alan ══ -->
+    <div id="login-form" class="auth-form active">
+      <div class="input-group">
+        <label>E-POSTA</label>
+        <div class="input-wrap">
+          <span class="input-icon">◈</span>
+          <input type="email" id="l-email" placeholder="user@domain.com" autocomplete="email"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>GİRİŞ ŞİFRESİ</label>
+        <div class="input-wrap">
+          <span class="input-icon">◈</span>
+          <input type="password" id="l-pw" placeholder="••••••••••••"/>
+          <button class="toggle-pw" onclick="togglePw('l-pw',this)">👁</button>
+        </div>
+        <button class="forgot-link" onclick="showForgot('login')">Giriş şifremi unuttum →</button>
+      </div>
+      <div class="input-group">
+        <label>ANA ŞİFRE <span class="badge-local">YEREL · DEK</span></label>
+        <div class="input-wrap">
+          <span class="input-icon">🔐</span>
+          <input type="password" id="l-master" placeholder="Ana şifreniz" autocomplete="off"/>
+          <button class="toggle-pw" onclick="togglePw('l-master',this)">👁</button>
+        </div>
+        <button class="forgot-link" onclick="showForgot('master')">Ana şifremi unuttum →</button>
+      </div>
+      <div class="input-group">
+        <label>AUTHENTICATOR KODU <span class="badge-local">2FA</span></label>
+        <div class="input-wrap totp-wrap-inline">
+          <span class="input-icon">📱</span>
+          <input type="text" id="l-totp" placeholder="6 haneli kod" maxlength="6" autocomplete="one-time-code"
+                 oninput="this.value=this.value.replace(/\D/g,'')"/>
+        </div>
+        <p class="field-hint">Google Authenticator veya Authy uygulamasından kodu girin. Admin override varsa boş bırakabilirsiniz.</p>
+      </div>
+      <button class="btn-cyber btn-primary" onclick="handleLogin()">
+        <span class="btn-text">GİRİŞ YAP</span><span class="btn-glow"></span>
+      </button>
+      <div id="login-error" class="error-msg hidden"></div>
+    </div>
+
+    <!-- ══ REGISTER ══ -->
+    <div id="register-form" class="auth-form">
+
+      <!-- ADIM 1 -->
+      <div id="reg-step1">
+        <div class="step-indicator">
+          <span class="step-dot active"></span>
+          <span class="step-line"></span>
+          <span class="step-dot"></span>
+          <span class="step-line"></span>
+          <span class="step-dot"></span>
+          <span class="step-label">Bilgiler</span>
+        </div>
+        <div class="input-group">
+          <label>E-POSTA</label>
+          <div class="input-wrap">
+            <span class="input-icon">◈</span>
+            <input type="email" id="r-email" placeholder="user@domain.com"/>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>KULLANICI ADI</label>
+          <div class="input-wrap">
+            <span class="input-icon">◈</span>
+            <input type="text" id="r-username" placeholder="cyber_user_01"/>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>GİRİŞ ŞİFRESİ</label>
+          <div class="input-wrap">
+            <span class="input-icon">◈</span>
+            <input type="password" id="r-pw" placeholder="Min. 6 karakter"/>
+            <button class="toggle-pw" onclick="togglePw('r-pw',this)">👁</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>ANA ŞİFRE <span class="badge-local">DEK ANAHTARI</span></label>
+          <div class="input-wrap">
+            <span class="input-icon">🔐</span>
+            <input type="password" id="r-master" placeholder="Min. 8 karakter — güçlü seçin"/>
+            <button class="toggle-pw" onclick="togglePw('r-master',this)">👁</button>
+          </div>
+          <p class="field-hint">Vault verilerini şifreler. Sıfırlanabilir ✓</p>
+        </div>
+        <div class="strength-meter">
+          <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+          <span id="strength-label">—</span>
+        </div>
+        <button class="btn-cyber btn-primary" onclick="registerStep1()">
+          <span class="btn-text">DEVAM: 2FA KURULUM →</span><span class="btn-glow"></span>
+        </button>
+        <div id="register-error" class="error-msg hidden"></div>
+      </div>
+
+      <!-- ADIM 2: TOTP QR -->
+      <div id="reg-step2" class="hidden">
+        <div class="step-nav">
+          <button class="back-btn" onclick="backToRegStep(1)">← Geri</button>
+          <div class="step-badge">ADIM 2 / 3 — 2FA KURULUM</div>
+        </div>
+        <p class="totp-setup-info">
+          <strong>Google Authenticator</strong> veya <strong>Authy</strong> uygulamasını açın ve QR kodu tarayın.
+        </p>
+        <div class="qr-outer">
+          <div id="qr-img-wrap" class="qr-container"></div>
+          <div id="qr-fallback" class="qr-fallback" style="display:none">
+            <p>QR kod yüklenemedi. Manuel giriş kodunu kullanın.</p>
+          </div>
+          <div class="qr-glow"></div>
+        </div>
+        <div class="totp-secret-display">
+          <span class="secret-label">Manuel giriş:</span>
+          <span id="totp-secret-text" class="secret-value">—</span>
+          <button class="copy-secret" onclick="copySecret()">⧉</button>
+        </div>
+        <div class="input-group" style="margin-top:16px">
+          <label>KODU DOĞRULA — uygulamadan 6 haneli kodu girin</label>
+          <div class="input-wrap totp-wrap-inline">
+            <span class="input-icon">📱</span>
+            <input type="text" id="r-totp" placeholder="000000" maxlength="6"
+                   oninput="this.value=this.value.replace(/\D/g,'')"/>
+          </div>
+        </div>
+        <button class="btn-cyber btn-primary" onclick="registerStep2()">
+          <span class="btn-text">DOĞRULA →</span>
+        </button>
+        <div id="reg-totp-error" class="error-msg hidden"></div>
+      </div>
+
+      <!-- ADIM 3: Yedek kodlar -->
+      <div id="reg-step3" class="hidden">
+        <div class="step-nav">
+          <button class="back-btn" onclick="backToRegStep(2)">← Geri</button>
+          <div class="step-badge step-badge-ok">ADIM 3 / 3 — YEDEK KODLAR</div>
+        </div>
+        <div class="warning-box">
+          <p class="warn-title">⚠ KRİTİK — BU KODLARI SAKLAYIN</p>
+          <p class="warn-text">Sadece sizin erişebileceğiniz güvenli bir yere kaydedin. "Kodlar" menüsünden her zaman görüntüleyebilirsiniz.</p>
+        </div>
+        <div class="ref-code-display">
+          <span class="ref-label">REFERANS KODUNUZ</span>
+          <span id="display-ref-code" class="ref-value">—</span>
+          <button class="copy-secret" onclick="copyRefCode()">⧉</button>
+        </div>
+        <div class="backup-codes-grid" id="backup-codes-display"></div>
+        <button class="btn-cyber btn-primary" onclick="registerFinish()">
+          <span class="btn-text">✓ KAYDET VE GİRİŞ YAP</span>
+        </button>
+      </div>
+
+    </div><!-- /register-form -->
+
+    <!-- ══ FORGOT PANEL ══ -->
+    <div id="forgot-panel" class="hidden">
+      <div class="forgot-header">
+        <button class="back-btn" onclick="closeForgot()">← Geri</button>
+        <h3 id="forgot-title" class="forgot-title">ŞİFRE SIFIRLA</h3>
+      </div>
+      <div id="forgot-step1">
+        <!-- Giriş şifresi: sadece e-posta | Ana şifre: e-posta + TOTP -->
+        <p class="field-hint" id="forgot-step1-hint" style="margin-bottom:12px">E-posta adresinizi girin.</p>
+        <div class="input-group">
+          <label>E-POSTA</label>
+          <div class="input-wrap">
+            <span class="input-icon">◈</span>
+            <input type="email" id="fg-email" placeholder="kayitli@mail.com"/>
+          </div>
+        </div>
+        <div class="input-group" id="fg-totp-wrap">
+          <label>AUTHENTICATOR KODU <span style="font-size:10px;color:var(--text-dim)">(sadece ana şifre için)</span></label>
+          <div class="input-wrap totp-wrap-inline">
+            <span class="input-icon">📱</span>
+            <input type="text" id="fg-totp" placeholder="6 haneli kod" maxlength="6"
+                   oninput="this.value=this.value.replace(/\D/g,'')"/>
+          </div>
+        </div>
+        <button class="btn-cyber btn-primary" onclick="forgotVerify()">
+          <span class="btn-text">DEVAM →</span>
+        </button>
+        <div id="forgot-err1" class="error-msg hidden"></div>
+      </div>
+      <div id="forgot-step2" class="hidden">
+        <div class="step-badge step-badge-ok" style="margin-bottom:14px">✓ KİMLİK DOĞRULANDI</div>
+        <div class="input-group">
+          <label id="forgot-new-label">YENİ ŞİFRE</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="fg-newpw" placeholder="Yeni şifre (min. 6)"/>
+            <button class="toggle-pw" onclick="togglePw('fg-newpw',this)">👁</button>
+          </div>
+        </div>
+        <button class="btn-cyber btn-primary" onclick="forgotSave()">
+          <span class="btn-text">ŞİFREYİ GÜNCELLE ✓</span>
+        </button>
+        <div id="forgot-err2" class="error-msg hidden"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     DASHBOARD
+═══════════════════════════════════════ -->
+<div id="dashboard-screen" class="screen">
+  <aside class="sidebar">
+    <div class="sidebar-logo">⬡<span>CV</span></div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showPanel('panel-vault')" data-panel="panel-vault">
+        <span class="nav-icon">🔐</span><span class="nav-label">ANA MENÜ</span>
+      </button>
+      <button class="nav-item" onclick="showPanel('panel-codes')" data-panel="panel-codes">
+        <span class="nav-icon">🗝</span><span class="nav-label">KODLAR</span>
+      </button>
+      <button class="nav-item" onclick="showPanel('panel-settings')" data-panel="panel-settings">
+        <span class="nav-icon">⚙</span><span class="nav-label">AYARLAR</span>
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user" id="sidebar-user">—</div>
+      <button class="nav-item nav-logout" onclick="handleLogout()">
+        <span class="nav-icon">⏻</span><span class="nav-label">ÇIKIŞ</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-title" id="topbar-title">VAULT KAYITLARI</div>
+      <div class="topbar-right">
+        <div class="lock-timer">🔓 <span id="timer-display">5:00</span></div>
+        <button class="btn-cyber btn-sm btn-danger" onclick="lockVault()">🔒 KİLİTLE</button>
+      </div>
+    </header>
+
+    <!-- VAULT -->
+    <div id="panel-vault" class="panel active">
+      <div class="stats-bar">
+        <div class="stat-card"><span class="stat-num" id="stat-total">0</span><span class="stat-label">KAYIT</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-weak">0</span><span class="stat-label">ZAYIF</span></div>
+        <div class="stat-card"><span class="stat-num" id="stat-strong">0</span><span class="stat-label">GÜÇLÜ</span></div>
+        <div class="stat-card"><span class="stat-num encrypt-indicator">DEK·AES</span><span class="stat-label">ŞİFRELEME</span></div>
+      </div>
+      <div class="panel-actions">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" placeholder="SİTE, KULLANICI ADI ARA..." oninput="filterPasswords()"/>
+          <span class="search-pulse"></span>
+        </div>
+        <button class="btn-cyber btn-primary btn-add" onclick="openAddModal()">+ YENİ</button>
+      </div>
+      <div id="password-list" class="password-list">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">🔐</div>
+          <p>Vault boş. İlk kaydınızı ekleyin.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODES -->
+    <div id="panel-codes" class="panel">
+      <div class="warning-box" style="margin-bottom:24px">
+        <p class="warn-title">⚠ GÜVENLİK UYARISI</p>
+        <p class="warn-text">Bu kodların tamamını — referans kodu dahil — <strong>yalnızca sizin erişebileceğiniz</strong> güvenli bir yere kaydedin. Bu kodlar vault'unuzun son güvencesidir.</p>
+      </div>
+      <div class="codes-section">
+        <div class="codes-section-title">REFERANS KODUNUZ</div>
+        <div class="ref-code-card">
+          <span id="codes-ref-display" class="ref-code-value">••••••••••••</span>
+          <button class="icon-btn" onclick="toggleCodesVisibility('ref')">👁</button>
+          <button class="icon-btn" onclick="copyCodesRef()">⧉</button>
+        </div>
+      </div>
+      <div class="codes-section" style="margin-top:24px">
+        <div class="codes-section-title">5 YEDEK KODUNUZ</div>
+        <div id="backup-codes-list" class="backup-codes-panel"></div>
+        <button class="btn-cyber btn-ghost" style="margin-top:12px;width:100%" onclick="toggleCodesVisibility('backup')">👁 GÖSTER / GİZLE</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="panel-settings" class="panel">
+      <div class="settings-grid">
+        <div class="settings-card">
+          <div class="settings-card-icon">✉</div>
+          <div class="settings-card-info">
+            <div class="settings-card-title">E-POSTA DEĞİŞTİR</div>
+            <div class="settings-card-sub">Hesap e-postanızı güncelleyin</div>
+          </div>
+          <button class="btn-cyber btn-sm" onclick="openSettingsModal('email')">DEĞİŞTİR</button>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-icon">🔑</div>
+          <div class="settings-card-info">
+            <div class="settings-card-title">GİRİŞ ŞİFRESİ DEĞİŞTİR</div>
+            <div class="settings-card-sub">Firebase hesap şifrenizi güncelleyin</div>
+          </div>
+          <button class="btn-cyber btn-sm" onclick="openSettingsModal('loginpw')">DEĞİŞTİR</button>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-icon">🔐</div>
+          <div class="settings-card-info">
+            <div class="settings-card-title">ANA ŞİFRE DEĞİŞTİR</div>
+            <div class="settings-card-sub">DEK şifreleyici anahtarınızı güncelleyin</div>
+          </div>
+          <button class="btn-cyber btn-sm" onclick="openSettingsModal('master')">DEĞİŞTİR</button>
+        </div>
+        <div class="settings-card" id="totp-setup-card">
+          <div class="settings-card-icon">📱</div>
+          <div class="settings-card-info">
+            <div class="settings-card-title">2FA YENİDEN KUR</div>
+            <div class="settings-card-sub" id="totp-status-sub">Authenticator uygulamanızı yeniden bağlayın</div>
+          </div>
+          <button class="btn-cyber btn-sm" onclick="openSettingsModal('totp')">KURULUM</button>
+        </div>
+        <div class="settings-card settings-card-danger">
+          <div class="settings-card-icon">💀</div>
+          <div class="settings-card-info">
+            <div class="settings-card-title">HESABI SİL</div>
+            <div class="settings-card-sub">Tüm veriler kalıcı olarak silinir</div>
+          </div>
+          <button class="btn-cyber btn-sm btn-danger" onclick="openSettingsModal('delete')">SİL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     LOCK SCREEN
+═══════════════════════════════════════ -->
+<div id="lock-screen" class="screen">
+  <div class="lock-container">
+    <div class="lock-icon-big">🔒</div>
+    <h2 class="lock-title">VAULT KİLİTLİ</h2>
+    <p class="lock-sub">5 dakika işlem yapılmadı.</p>
+    <div class="input-group">
+      <label>ANA ŞİFRE</label>
+      <div class="input-wrap">
+        <span class="input-icon">🔐</span>
+        <input type="password" id="unlock-master" placeholder="Ana şifrenizi girin"/>
+        <button class="toggle-pw" onclick="togglePw('unlock-master',this)">👁</button>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>AUTHENTICATOR KODU</label>
+      <div class="input-wrap totp-wrap-inline">
+        <span class="input-icon">📱</span>
+        <input type="text" id="unlock-totp" placeholder="6 haneli kod" maxlength="6"
+               oninput="this.value=this.value.replace(/\D/g,'')"/>
+      </div>
+    </div>
+    <button class="btn-cyber btn-primary" onclick="unlockVault()">
+      <span class="btn-text">VAULT'U AÇ</span>
+    </button>
+    <div id="unlock-error" class="error-msg hidden"></div>
+    <button class="btn-link" onclick="handleLogout()">Farklı hesapla giriş yap</button>
+  </div>
+</div>
+
+<!-- 2FA SETUP MODAL -->
+<div id="totp-setup-modal" class="modal-overlay hidden" onclick="closeTotpModal(event)">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <h3>2FA YENİDEN KURULUM</h3>
+      <button class="modal-close" onclick="closeTotpModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- ADIM 1: Şifre doğrula -->
+      <div id="totp-modal-step1">
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;font-family:var(--font-mono)">
+          Güvenlik için önce ana şifrenizi doğrulayın.
+        </p>
+        <div class="input-group">
+          <label>ANA ŞİFRE</label>
+          <div class="input-wrap">
+            <input type="password" id="totp-verify-master" placeholder="Ana şifreniz"/>
+            <button class="toggle-pw" onclick="togglePw('totp-verify-master',this)">👁</button>
+          </div>
+        </div>
+        <div id="totp-modal-err1" class="error-msg hidden"></div>
+        <button class="btn-cyber btn-primary w-full" onclick="totpSetupStep1()">DEVAM</button>
+      </div>
+
+      <!-- ADIM 2: QR göster + doğrula -->
+      <div id="totp-modal-step2" class="hidden">
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;font-family:var(--font-mono)">
+          Google Authenticator ile QR kodu tarayın, ardından 6 haneli kodu girin.
+        </p>
+        <div style="text-align:center;margin-bottom:12px">
+          <div id="totp-modal-qr" style="display:inline-block;padding:10px;background:#0a0a0c;border:2px solid rgba(188,19,254,.4)"></div>
+        </div>
+        <div class="input-group">
+          <label>MANUEl KOD</label>
+          <div style="background:rgba(0,243,255,.05);border:1px dashed rgba(0,243,255,.3);padding:8px;font-family:var(--font-mono);font-size:11px;color:var(--accent-blue);word-break:break-all;text-align:center" id="totp-modal-secret"></div>
+        </div>
+        <div class="input-group" style="margin-top:12px">
+          <label>DOĞRULAMA KODU</label>
+          <div class="input-wrap totp-wrap-inline">
+            <input type="text" id="totp-modal-code" placeholder="6 haneli kod" maxlength="6"
+                   style="text-align:center;letter-spacing:6px;font-size:18px"
+                   oninput="this.value=this.value.replace(/\D/g,''); if(this.value.length===6) totpSetupStep2()"/>
+          </div>
+        </div>
+        <div id="totp-modal-err2" class="error-msg hidden"></div>
+        <button class="btn-cyber btn-primary w-full" onclick="totpSetupStep2()">2FA'YI AKTİF ET</button>
+      </div>
+
+      <!-- ADIM 3: Başarılı -->
+      <div id="totp-modal-step3" class="hidden" style="text-align:center;padding:20px 0">
+        <div style="font-size:40px;margin-bottom:12px">✅</div>
+        <p style="font-family:var(--font-mono);color:var(--accent-green);font-size:13px;margin-bottom:8px">2FA BAŞARIYLA AKTİF EDİLDİ</p>
+        <p style="font-family:var(--font-mono);color:var(--text-dim);font-size:11px">Bir sonraki girişinizden itibaren authenticator kodu istenecek.</p>
+        <button class="btn-cyber btn-primary w-full" style="margin-top:20px" onclick="closeTotpModal()">TAMAM</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ENTRY MODAL -->
+<div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">YENİ KAYIT EKLE</h3>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label>SİTE ADI <span class="required">*</span></label>
+        <div class="input-wrap"><span class="input-icon">🌐</span>
+          <input type="text" id="entry-site" placeholder="örn: github.com"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>KULLANICI ADI <span class="optional">opsiyonel</span></label>
+        <div class="input-wrap"><span class="input-icon">◈</span>
+          <input type="text" id="entry-username" placeholder="kullanıcı adı"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>E-POSTA <span class="optional">opsiyonel</span></label>
+        <div class="input-wrap"><span class="input-icon">◈</span>
+          <input type="email" id="entry-email" placeholder="ornek@mail.com"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>ŞİFRE <span class="required">*</span></label>
+        <div class="input-wrap"><span class="input-icon">🔑</span>
+          <input type="password" id="entry-password" placeholder="şifre"/>
+          <button class="toggle-pw" onclick="togglePw('entry-password',this)">👁</button>
+        </div>
+      </div>
+      <div class="gen-section">
+        <button class="btn-cyber btn-sm btn-ghost" onclick="toggleGenerator()">⚡ ŞİFRE ÜRETİCİ</button>
+        <div id="generator-panel" class="gen-panel hidden">
+          <div class="gen-controls">
+            <label>UZUNLUK: <span id="gen-len-val">16</span></label>
+            <input type="range" id="gen-length" min="8" max="64" value="16"
+                   oninput="document.getElementById('gen-len-val').textContent=this.value"/>
+          </div>
+          <div class="gen-options">
+            <label><input type="checkbox" id="gen-upper" checked> A-Z</label>
+            <label><input type="checkbox" id="gen-lower" checked> a-z</label>
+            <label><input type="checkbox" id="gen-nums"  checked> 0-9</label>
+            <label><input type="checkbox" id="gen-symbols" checked> !@#$</label>
+          </div>
+          <div class="gen-preview" id="gen-preview">—</div>
+          <div class="gen-actions">
+            <button class="btn-cyber btn-sm btn-ghost" onclick="generatePassword()">🎲 ÜRET</button>
+            <button class="btn-cyber btn-sm btn-primary" onclick="useGeneratedPassword()">✓ KULLAN</button>
+          </div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>NOTLAR <span class="optional">opsiyonel</span></label>
+        <div class="input-wrap"><textarea id="entry-notes" placeholder="Ek notlar..." rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cyber btn-ghost" onclick="closeModalDirect()">İPTAL</button>
+      <button class="btn-cyber btn-primary" onclick="saveEntry()" id="save-btn">
+        <span class="btn-text">KAYDET</span>
+      </button>
+    </div>
+    <div id="modal-error" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal-overlay" class="modal-overlay hidden" onclick="closeSettingsModal(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="settings-modal-title">AYAR</h3>
+      <button class="modal-close" onclick="closeSettingsModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="settings-modal-body"></div>
+    <div id="settings-modal-error" class="error-msg hidden" style="margin:0 24px 16px"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/otpauth@9.3.4/dist/otpauth.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
